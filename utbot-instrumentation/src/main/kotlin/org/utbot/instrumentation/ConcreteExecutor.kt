@@ -1,5 +1,6 @@
 package org.utbot.instrumentation
 
+import com.jetbrains.rd.util.lifetime.Lifetime
 import org.utbot.common.bracket
 import org.utbot.common.catch
 import org.utbot.common.currentThreadInfo
@@ -202,6 +203,8 @@ class ConcreteExecutor<TIResult, TInstrumentation : Instrumentation<TIResult>> p
     }
 
     fun warmup() {
+        val kek = Lifetime.Eternal
+        println(kek.hashCode())
         restartIfNeeded()
         sendCommand(Protocol.WarmupCommand())
     }
