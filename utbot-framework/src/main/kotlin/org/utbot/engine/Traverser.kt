@@ -3572,9 +3572,9 @@ class Traverser(
      * Collects entry method statement path for ML. Eliminates duplicated statements, e.g. assignment with invocation
      * in right part.
      */
-    private fun entryMethodPath(): MutableList<Step> {
+    private fun entryMethodPath(state: ExecutionState): MutableList<Step> {
         val entryPath = mutableListOf<Step>()
-        environment.state.fullPath().forEach { step ->
+        state.fullPath().forEach { step ->
             // TODO: replace step.stmt in methodUnderAnalysisStmts with step.depth == 0
             //  when fix SAT-812: [JAVA] Wrong depth when exception thrown
             if (step.stmt in methodUnderAnalysisStmts && step.stmt !== entryPath.lastOrNull()?.stmt) {
@@ -3760,7 +3760,7 @@ class Traverser(
             stateAfter,
             symbolicExecutionResult,
             instrumentation,
-            entryMethodPath(),
+            entryMethodPath(environment.state),
             state.fullPath()
         )
 
