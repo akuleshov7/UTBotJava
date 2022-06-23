@@ -695,7 +695,7 @@ class Traverser(
             is JInvokeStmt -> traverseInvokeStmt(current)
             is SwitchStmt -> traverseSwitchStmt(current)
             is JReturnStmt -> processResult(current.symbolicSuccess())
-            is JReturnVoidStmt -> processResult(null)
+            is JReturnVoidStmt -> processResult(SymbolicSuccess(voidValue))
             is JRetStmt -> error("This one should be already removed by Soot: $current")
             is JThrowStmt -> traverseThrowStmt(current)
             is JBreakpointStmt -> pathSelector.offer(environment.state.updateQueued(globalGraph.succ(current)))
@@ -3649,7 +3649,7 @@ class Traverser(
         )
     }
 
-    private suspend fun FlowCollector<UtResult>.processResult(symbolicResult: SymbolicResult? /* null for void only: strange hack */) {
+    private suspend fun FlowCollector<UtResult>.processResult(symbolicResult: SymbolicResult) {
         val resolvedParameters = environment.state.parameters.map { it.value }
 
         //choose types that have biggest priority
@@ -3703,9 +3703,8 @@ class Traverser(
             } else {
                 MemoryUpdate() // all memory updates are already added in [environment.state]
             }
-            val symbolicResultOrVoid = symbolicResult ?: SymbolicSuccess(typeResolver.nullObject(VoidType.v()))
             val methodResult = MethodResult(
-                symbolicResultOrVoid,
+                symbolicResult,
                 queuedSymbolicStateUpdates + updates
             )
             val stateToOffer = environment.state.pop(methodResult)
