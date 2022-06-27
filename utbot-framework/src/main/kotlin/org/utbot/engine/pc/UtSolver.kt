@@ -1,5 +1,14 @@
 package org.utbot.engine.pc
 
+import com.microsoft.z3.BoolExpr
+import com.microsoft.z3.Context
+import com.microsoft.z3.Params
+import com.microsoft.z3.Solver
+import com.microsoft.z3.Status.SATISFIABLE
+import com.microsoft.z3.Status.UNSATISFIABLE
+import kotlinx.collections.immutable.PersistentSet
+import kotlinx.collections.immutable.persistentHashSetOf
+import mu.KotlinLogging
 import org.utbot.analytics.IncrementalData
 import org.utbot.analytics.Predictors
 import org.utbot.analytics.learnOn
@@ -14,28 +23,15 @@ import org.utbot.engine.pc.UtSolverStatusKind.UNKNOWN
 import org.utbot.engine.pc.UtSolverStatusKind.UNSAT
 import org.utbot.engine.prettify
 import org.utbot.engine.symbolic.Assumption
+import org.utbot.engine.*
+import org.utbot.engine.pc.UtSolverStatusKind.*
 import org.utbot.engine.symbolic.HardConstraint
 import org.utbot.engine.symbolic.SoftConstraint
-import org.utbot.engine.prettify
-import org.utbot.engine.toIntValue
 import org.utbot.engine.z3.Z3Initializer
 import org.utbot.framework.UtSettings
 import org.utbot.framework.UtSettings.checkSolverTimeoutMillis
 import org.utbot.framework.UtSettings.preferredCexOption
-import com.microsoft.z3.BoolExpr
-import com.microsoft.z3.Context
-import com.microsoft.z3.Params
-import com.microsoft.z3.Solver
-import com.microsoft.z3.Status.SATISFIABLE
-import com.microsoft.z3.Status.UNSATISFIABLE
-import kotlinx.collections.immutable.PersistentSet
-import kotlinx.collections.immutable.persistentHashSetOf
-import mu.KotlinLogging
-import soot.ByteType
-import soot.CharType
-import soot.IntType
-import soot.ShortType
-import soot.Type
+import soot.*
 
 private val logger = KotlinLogging.logger {}
 
@@ -208,6 +204,24 @@ data class UtSolver constructor(
                 z3Solver = context.mkSolver().also { it.setParameters(params) },
             )
         }
+    }
+
+    /**
+     * Call check of SMT Solver with [initialConstraints]. Used to initialize SMT Solver by fuzzing.
+     */
+    fun checkWithInitialConstraints(initialConstraints: List<UtBoolExpression>): UtSolverStatus {
+        check(respectSoft = false).let { statusHolder ->
+            if (statusHolder is UtSolverStatusUNSAT) {
+                return statusHolder
+            }
+        }
+        val translatedConstraints = initialConstraints.translate()
+        val statusHolder = when (val status = check(translatedConstraints, mutableMapOf())) {
+            SAT -> UtSolverStatusSAT(translator, z3Solver)
+            else -> UtSolverStatusUNSAT(status)
+        }
+        constraints.withStatus(statusHolder)
+        return statusHolder
     }
 
     fun check(respectSoft: Boolean = true): UtSolverStatus {

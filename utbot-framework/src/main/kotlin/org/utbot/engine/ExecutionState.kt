@@ -187,7 +187,7 @@ data class ExecutionState(
             pathLength = pathLength + 1,
             lastEdge = edge,
             lastMethod = executionStack.last().method,
-            methodResult,
+            methodResult = methodResult,
             stateAnalyticsProperties = stateAnalyticsProperties.successorProperties(this)
         )
     }
