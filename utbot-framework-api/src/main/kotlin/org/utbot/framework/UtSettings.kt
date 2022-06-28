@@ -251,7 +251,7 @@ object UtSettings {
     /**
      * Set to true to initialize symbolic parameters by values from fuzzing.
      */
-    var useFuzzingInitialization: Boolean by getBooleanProperty(false)
+    var useFuzzingInitialization: Boolean by getBooleanProperty(true)
 
     /**
      * Set the total attempts to improve coverage by fuzzer.
