@@ -588,13 +588,16 @@ class UtBotSymbolicEngine(
             fuzzInitialModels(::getModelProviderToFuzzingInitializing, FallbackModelProvider { nextDefaultModelId++ })
                 .map { parameters ->
                     withIsolatedUpdates {
-                        val initialConstraints = if (hasThis) {
+                        val stateParametersWithoutThis = if (hasThis) {
                             state.parameters.drop(1)
                         } else {
                             state.parameters
-                        }.zip(parameters).flatMap { (parameter, model) ->
-                            buildConstraintsFromModel(parameter.value, model)
                         }
+                        val initialConstraints = stateParametersWithoutThis
+                            .zip(parameters)
+                            .flatMap { (parameter, model) ->
+                                buildConstraintsFromModel(parameter.value, model)
+                            }
                         state.updateMemory(queuedSymbolicStateUpdates).apply {
                             solver.checkWithInitialConstraints(initialConstraints)
                         }
@@ -3857,8 +3860,13 @@ class UtBotSymbolicEngine(
         return SymbolicSuccess(value)
     }
 
+    /**
+     * Invoke [block] with setting [state] to [environment].
+     *
+     * Note: [environment]'s state is set back after invocation.
+     */
     private inline fun <reified T> withEnvironmentState(state: ExecutionState, block: () -> T): T {
-        val prevState = environment.state;
+        val prevState = environment.state
         try {
             environment.state = state
             return block()
@@ -3867,6 +3875,12 @@ class UtBotSymbolicEngine(
         }
     }
 
+    /**
+     * Invoke [block] with empty [queuedSymbolicStateUpdates].
+     * This method is similar [asMethodResult].
+     *
+     * Note: [queuedSymbolicStateUpdates] are set back after invocation.
+     */
     private inline fun <reified T> withIsolatedUpdates(block: () -> T): T {
         val prevSymbolicStateUpdate = queuedSymbolicStateUpdates
         try {

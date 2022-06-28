@@ -107,7 +107,7 @@ class ConstraintModelVisitor(
             is ObjectValue -> {
                 val constraints = mutableListOf<UtBoolExpression>()
                 val type = model.classId.toType() as RefType
-                val typeStorage = engine.typeResolver.constructTypeStorage(type, true)
+                val typeStorage = engine.typeResolver.constructTypeStorage(type, useConcreteType = true)
                 constraints += engine.typeRegistry.typeConstraint(value.addr, typeStorage).isConstraint()
                 model.fields.forEach { (field, fieldModel) ->
                     val sootField = field.declaringClass.toSoot().getFieldByName(field.name)
