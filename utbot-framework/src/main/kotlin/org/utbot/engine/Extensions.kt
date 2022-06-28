@@ -1,10 +1,43 @@
 package org.utbot.engine
 
 import com.google.common.collect.BiMap
+import java.lang.reflect.Constructor
+import java.lang.reflect.Method
+import java.lang.reflect.Modifier
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentHashMapOf
 import org.utbot.api.mock.UtMock
-import org.utbot.engine.pc.*
+import org.utbot.engine.pc.UtAddrExpression
+import org.utbot.engine.pc.UtArraySort
+import org.utbot.engine.pc.UtBoolExpression
+import org.utbot.engine.pc.UtBoolSort
+import org.utbot.engine.pc.UtBvConst
+import org.utbot.engine.pc.UtByteSort
+import org.utbot.engine.pc.UtCharSort
+import org.utbot.engine.pc.UtExpression
+import org.utbot.engine.pc.UtFp32Sort
+import org.utbot.engine.pc.UtFp64Sort
+import org.utbot.engine.pc.UtIntSort
+import org.utbot.engine.pc.UtLongSort
+import org.utbot.engine.pc.UtSeqSort
+import org.utbot.engine.pc.UtShortSort
+import org.utbot.engine.pc.UtSolverStatusKind
+import org.utbot.engine.pc.UtSolverStatusSAT
+import org.utbot.engine.pc.UtSolverStatusUNDEFINED
+import org.utbot.engine.pc.UtSort
+import org.utbot.engine.pc.mkArrayWithConst
+import org.utbot.engine.pc.mkBool
+import org.utbot.engine.pc.mkByte
+import org.utbot.engine.pc.mkChar
+import org.utbot.engine.pc.mkDouble
+import org.utbot.engine.pc.mkFloat
+import org.utbot.engine.pc.mkInt
+import org.utbot.engine.pc.mkLong
+import org.utbot.engine.pc.mkShort
+import org.utbot.engine.pc.mkString
+import org.utbot.engine.pc.select
+import org.utbot.engine.pc.toSort
 import org.utbot.framework.UtSettings.checkNpeForFinalFields
 import org.utbot.framework.UtSettings.checkNpeInNestedMethods
 import org.utbot.framework.UtSettings.checkNpeInNestedNotPrivateMethods
@@ -12,16 +45,34 @@ import org.utbot.framework.plugin.api.ClassId
 import org.utbot.framework.plugin.api.FieldId
 import org.utbot.framework.plugin.api.UtMethod
 import org.utbot.framework.plugin.api.id
-import soot.*
+import org.utbot.framework.plugin.api.util.isArray
+import soot.ArrayType
+import soot.IntType
+import soot.PrimType
+import soot.RefLikeType
+import soot.RefType
+import soot.Scene
+import soot.SootClass
 import soot.SootClass.BODIES
-import soot.jimple.*
-import soot.jimple.internal.*
+import soot.SootField
+import soot.SootMethod
+import soot.Type
+import soot.Value
+import soot.jimple.Expr
+import soot.jimple.InvokeExpr
+import soot.jimple.JimpleBody
+import soot.jimple.StaticFieldRef
+import soot.jimple.Stmt
+import soot.jimple.internal.JDynamicInvokeExpr
+import soot.jimple.internal.JIdentityStmt
+import soot.jimple.internal.JInterfaceInvokeExpr
+import soot.jimple.internal.JInvokeStmt
+import soot.jimple.internal.JSpecialInvokeExpr
+import soot.jimple.internal.JStaticInvokeExpr
+import soot.jimple.internal.JVirtualInvokeExpr
+import soot.jimple.internal.JimpleLocal
 import soot.tagkit.ArtificialEntityTag
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl
-import java.lang.reflect.Constructor
-import java.lang.reflect.Method
-import java.lang.reflect.Modifier
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KFunction
 import kotlin.reflect.KProperty
 import kotlin.reflect.jvm.javaConstructor
@@ -427,6 +478,22 @@ fun Memory.findOrdinal(type: RefType, addr: UtAddrExpression) : PrimitiveValue {
 }
 
 fun ClassId.toSoot(): SootClass = Scene.v().getSootClass(this.name)
+
+// Our and Soot's representations are not same
+fun ClassId.toType(): Type {
+    var arrayDim = 0
+    var result = this
+    while (result.isArray) {
+        ++arrayDim
+        result = result.elementClassId!!
+    }
+    val typeResult = Scene.v().getType(result.name)
+    return if (arrayDim != 0) {
+        ArrayType.v(typeResult, arrayDim)
+    } else {
+        typeResult
+    }
+}
 
 /**
  * Returns true if the [SootMethod]'s signature is equal to [UtMock.assume]'s signature, false otherwise.

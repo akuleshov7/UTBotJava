@@ -1,9 +1,34 @@
 package org.utbot.engine.mvisitors
 
-import org.utbot.engine.*
-import org.utbot.engine.pc.*
-import org.utbot.engine.symbolic.asHardConstraint
-import org.utbot.framework.plugin.api.*
+import org.utbot.engine.ArrayValue
+import org.utbot.engine.MemoryChunkDescriptor
+import org.utbot.engine.ObjectValue
+import org.utbot.engine.PrimitiveValue
+import org.utbot.engine.ReferenceValue
+import org.utbot.engine.SymbolicValue
+import org.utbot.engine.UtBotSymbolicEngine
+import org.utbot.engine.addr
+import org.utbot.engine.findOrdinal
+import org.utbot.engine.nullObjectAddr
+import org.utbot.engine.pc.UtAddrExpression
+import org.utbot.engine.pc.UtBoolExpression
+import org.utbot.engine.pc.align
+import org.utbot.engine.pc.mkEq
+import org.utbot.engine.pc.mkNot
+import org.utbot.engine.pc.select
+import org.utbot.engine.primitiveToLiteral
+import org.utbot.engine.primitiveToSymbolic
+import org.utbot.engine.toSoot
+import org.utbot.engine.toType
+import org.utbot.engine.voidValue
+import org.utbot.framework.plugin.api.UtArrayModel
+import org.utbot.framework.plugin.api.UtAssembleModel
+import org.utbot.framework.plugin.api.UtClassRefModel
+import org.utbot.framework.plugin.api.UtCompositeModel
+import org.utbot.framework.plugin.api.UtEnumConstantModel
+import org.utbot.framework.plugin.api.UtNullModel
+import org.utbot.framework.plugin.api.UtPrimitiveModel
+import org.utbot.framework.plugin.api.UtVoidModel
 import soot.ArrayType
 import soot.RefType
 
@@ -41,11 +66,15 @@ class ConstraintModelVisitor(
                 constraints += mkNot(mkEq(value.addr, nullObjectAddr))
                 val arrayLength = engine.memory.findArrayLength(value.addr)
                 constraints += mkEq(arrayLength.align(), model.length.primitiveToSymbolic())
+                val type = model.classId.toType() as ArrayType
+                val elementType = model.classId.elementClassId!!.toType()
+                val descriptor = MemoryChunkDescriptor(engine.typeRegistry.arrayChunkId(type), type, elementType)
+                val array = engine.memory.findArray(descriptor)
 
                 repeat(model.length) { storeIndex ->
                     val storeModel = model.stores[storeIndex] ?: model.constModel
-                    val selectedExpr = value.addr.select(storeIndex.primitiveToLiteral())
-                    val storeSymbolicValue = when (val elementType = value.type.elementType) {
+                    val selectedExpr = array.select(value.addr, storeIndex.primitiveToLiteral())
+                    val storeSymbolicValue = when (elementType) {
                         is RefType -> engine.createObject(
                             UtAddrExpression(selectedExpr),
                             elementType,
@@ -77,7 +106,7 @@ class ConstraintModelVisitor(
         when (val value = symbolicValue) {
             is ObjectValue -> {
                 val constraints = mutableListOf<UtBoolExpression>()
-                val type = model.classId.toSoot().type
+                val type = model.classId.toType() as RefType
                 val typeStorage = engine.typeResolver.constructTypeStorage(type, true)
                 constraints += engine.typeRegistry.typeConstraint(value.addr, typeStorage).isConstraint()
                 model.fields.forEach { (field, fieldModel) ->

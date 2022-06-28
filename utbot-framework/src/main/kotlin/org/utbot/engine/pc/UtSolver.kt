@@ -23,15 +23,18 @@ import org.utbot.engine.pc.UtSolverStatusKind.UNKNOWN
 import org.utbot.engine.pc.UtSolverStatusKind.UNSAT
 import org.utbot.engine.prettify
 import org.utbot.engine.symbolic.Assumption
-import org.utbot.engine.*
-import org.utbot.engine.pc.UtSolverStatusKind.*
 import org.utbot.engine.symbolic.HardConstraint
 import org.utbot.engine.symbolic.SoftConstraint
+import org.utbot.engine.toIntValue
 import org.utbot.engine.z3.Z3Initializer
 import org.utbot.framework.UtSettings
 import org.utbot.framework.UtSettings.checkSolverTimeoutMillis
 import org.utbot.framework.UtSettings.preferredCexOption
-import soot.*
+import soot.ByteType
+import soot.CharType
+import soot.IntType
+import soot.ShortType
+import soot.Type
 
 private val logger = KotlinLogging.logger {}
 

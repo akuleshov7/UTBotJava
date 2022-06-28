@@ -19,14 +19,12 @@ import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.job
 import kotlinx.coroutines.yield
 import mu.KotlinLogging
 import org.utbot.analytics.EngineAnalyticsContext
@@ -118,8 +116,6 @@ import org.utbot.engine.symbolic.asAssumption
 import org.utbot.engine.symbolic.asHardConstraint
 import org.utbot.engine.symbolic.asSoftConstraint
 import org.utbot.engine.symbolic.asUpdate
-import org.utbot.engine.util.mockListeners.MockListener
-import org.utbot.engine.util.mockListeners.MockListenerController
 import org.utbot.engine.util.statics.concrete.associateEnumSootFieldsWithConcreteValues
 import org.utbot.engine.util.statics.concrete.isEnumAffectingExternalStatics
 import org.utbot.engine.util.statics.concrete.isEnumValuesFieldName
@@ -1327,7 +1323,11 @@ class UtBotSymbolicEngine(
                     val hasThis = methodUnderTest.run {
                         !isStatic && !isConstructor
                     }
-                    var expectedParamsSize = methodUnderTest.javaMethod!!.parameterCount
+                    var expectedParamsSize = if (methodUnderTest.isConstructor) {
+                        methodUnderTest.javaConstructor!!.parameterCount
+                    } else {
+                        methodUnderTest.javaMethod!!.parameterCount
+                    }
                     if (hasThis) {
                         ++expectedParamsSize
                     }

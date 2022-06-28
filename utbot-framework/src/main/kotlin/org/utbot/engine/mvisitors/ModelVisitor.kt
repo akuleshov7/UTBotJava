@@ -1,6 +1,14 @@
 package org.utbot.engine.mvisitors
 
-import org.utbot.framework.plugin.api.*
+import org.utbot.framework.plugin.api.UtArrayModel
+import org.utbot.framework.plugin.api.UtAssembleModel
+import org.utbot.framework.plugin.api.UtClassRefModel
+import org.utbot.framework.plugin.api.UtCompositeModel
+import org.utbot.framework.plugin.api.UtEnumConstantModel
+import org.utbot.framework.plugin.api.UtModel
+import org.utbot.framework.plugin.api.UtNullModel
+import org.utbot.framework.plugin.api.UtPrimitiveModel
+import org.utbot.framework.plugin.api.UtVoidModel
 
 /**
  * Class for traversing UtModel.
