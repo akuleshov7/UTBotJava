@@ -5,6 +5,10 @@ import java.lang.reflect.Constructor
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KFunction
+import kotlin.reflect.KProperty
+import kotlin.reflect.jvm.javaConstructor
+import kotlin.reflect.jvm.javaMethod
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentHashMapOf
 import org.utbot.api.mock.UtMock
@@ -38,7 +42,6 @@ import org.utbot.engine.pc.mkShort
 import org.utbot.engine.pc.mkString
 import org.utbot.engine.pc.select
 import org.utbot.engine.pc.toSort
-import org.utbot.framework.UtSettings.checkNpeForFinalFields
 import org.utbot.framework.UtSettings.checkNpeInNestedMethods
 import org.utbot.framework.UtSettings.checkNpeInNestedNotPrivateMethods
 import org.utbot.framework.plugin.api.ClassId
@@ -73,10 +76,6 @@ import soot.jimple.internal.JVirtualInvokeExpr
 import soot.jimple.internal.JimpleLocal
 import soot.tagkit.ArtificialEntityTag
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl
-import kotlin.reflect.KFunction
-import kotlin.reflect.KProperty
-import kotlin.reflect.jvm.javaConstructor
-import kotlin.reflect.jvm.javaMethod
 
 val JIdentityStmt.lines: String
     get() = tags.joinToString { "$it" }
