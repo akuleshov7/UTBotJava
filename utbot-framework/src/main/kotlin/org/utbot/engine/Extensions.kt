@@ -318,6 +318,9 @@ val <R> UtMethod<R>.isConstructor: Boolean
 val <R> UtMethod<R>.isMethod: Boolean
     get() = javaMethod != null
 
+val <R> UtMethod<R>.hasThisInParameters: Boolean
+    get() = !isConstructor && !isStatic
+
 val <R> UtMethod<R>.signature: String
     get() {
         val methodName = this.callable.name

@@ -587,12 +587,12 @@ class UtBotSymbolicEngine(
     /**
      * Construct sequence of [ExecutionState] that's initialized by fuzzing.
      */
-    private fun statesInitializedFromFuzzing(state: ExecutionState, hasThis: Boolean): Sequence<ExecutionState> =
+    private fun statesInitializedFromFuzzing(state: ExecutionState): Sequence<ExecutionState> =
         withEnvironmentState(state) {
             fuzzInitialModels(::getModelProviderToFuzzingInitializing, FallbackModelProvider { nextDefaultModelId++ })
                 .map { parameters ->
                     withIsolatedUpdates {
-                        val stateParametersWithoutThis = if (hasThis) {
+                        val stateParametersWithoutThis = if (methodUnderTest.hasThisInParameters) {
                             state.parameters.drop(1)
                         } else {
                             state.parameters
@@ -1321,32 +1321,33 @@ class UtBotSymbolicEngine(
 
                 environment.state.parameters += Parameter(localVariable, identityRef.type, value)
 
-                var nextState = environment.state.updateQueued(
+                val nextState = environment.state.updateQueued(
                     globalGraph.succ(current),
                     SymbolicStateUpdate(localMemoryUpdates = localMemoryUpdate(localVariable to value))
                 )
                 // TODO: refactor this
-                if (UtSettings.useFuzzingInitialization && !isInNestedMethod()) {
-                    val hasThis = methodUnderTest.run {
-                        !isStatic && !isConstructor
-                    }
+                val initializedStateByFuzzing = if (UtSettings.useFuzzingInitialization && !isInNestedMethod()) {
                     var expectedParamsSize = if (methodUnderTest.isConstructor) {
                         methodUnderTest.javaConstructor!!.parameterCount
                     } else {
                         methodUnderTest.javaMethod!!.parameterCount
                     }
-                    if (hasThis) {
+                    if (methodUnderTest.hasThisInParameters) {
                         ++expectedParamsSize
                     }
 
                     if (expectedParamsSize == environment.state.parameters.size) {
-                        statesInitializedFromFuzzing(nextState, hasThis).firstOrNull()?.let {
-                            nextState = it
-                        }
+                        statesInitializedFromFuzzing(nextState).firstOrNull()
+                    } else {
+                        null
                     }
+                } else {
+                    null
                 }
 
-                pathSelector.offer(nextState)
+                initializedStateByFuzzing?.let {
+                    pathSelector.offer(it)
+                } ?: pathSelector.offer(nextState)
             }
             is JCaughtExceptionRef -> {
                 val value = localVariableMemory.local(CAUGHT_EXCEPTION)
