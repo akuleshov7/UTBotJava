@@ -348,6 +348,8 @@ class UtBotSymbolicEngine(
                         // So we need to make it throw CancelledException by method below:
                         currentCoroutineContext().job.ensureActive()
                     }
+
+                    // TODO: think about concise modifying globalGraph in Traverser and UtBotSymbolicEngine
                     globalGraph.visitNode(state)
                 }
             }
