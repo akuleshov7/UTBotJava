@@ -1,5 +1,6 @@
 package org.utbot.framework.concrete
 
+import kotlinx.serialization.Serializable
 import org.utbot.common.StopWatch
 import org.utbot.common.ThreadBasedExecutor
 import org.utbot.common.withAccessibility
@@ -56,6 +57,7 @@ data class UtConcreteExecutionData(
     val timeout: Long = UtSettings.concreteExecutionTimeoutInChildProcess
 )
 
+@Serializable
 class UtConcreteExecutionResult(
     val stateAfter: EnvironmentModels,
     val result: UtExecutionResult,
@@ -104,6 +106,7 @@ class UtConcreteExecutionResult(
     }
 }
 
+@Serializable
 object UtExecutionInstrumentation : Instrumentation<UtConcreteExecutionResult> {
     private val delegateInstrumentation = InvokeInstrumentation()
 
@@ -133,7 +136,7 @@ object UtExecutionInstrumentation : Instrumentation<UtConcreteExecutionResult> {
         if (parameters !is UtConcreteExecutionData) {
             throw IllegalArgumentException("Argument parameters must be of type UtConcreteExecutionData, but was: ${parameters?.javaClass}")
         }
-        val (stateBefore, instrumentations, timeout) = parameters // smart cast to UtConcreteExecutionData
+        val (stateBefore, instrumentations: List<UtInstrumentation>, timeout) = parameters // smart cast to UtConcreteExecutionData
         val parametersModels = listOfNotNull(stateBefore.thisInstance) + stateBefore.parameters
 
         val methodId = clazz.singleExecutableId(methodSignature)

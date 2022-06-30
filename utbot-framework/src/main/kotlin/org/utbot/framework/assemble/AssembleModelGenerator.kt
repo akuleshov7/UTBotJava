@@ -202,7 +202,7 @@ class AssembleModelGenerator(private val methodUnderTest: UtMethod<*>) {
             // Note that we use constModel from the source model as is here to avoid
             // possible stack overflow error in case when const model has the same
             // id as the source one. Later we will try to transform it.
-            val assembleModel = UtArrayModel(id, classId, length, constModel, stores = mutableMapOf())
+            val assembleModel = UtArrayModel(id!!, classId, length, constModel, _stores = mutableMapOf())
 
             instantiatedModels[this] = assembleModel
 
@@ -308,7 +308,7 @@ class AssembleModelGenerator(private val methodUnderTest: UtMethod<*>) {
         val assembledModel = UtCompositeModel(
             compositeModel.id,
             compositeModel.classId,
-            isMock = true,
+            _isMock = true,
         )
 
         instantiatedModels[compositeModel] = assembledModel

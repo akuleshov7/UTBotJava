@@ -1,5 +1,13 @@
 package org.utbot.instrumentation.instrumentation.coverage
 
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.descriptors.element
+import kotlinx.serialization.encoding.*
+import org.utbot.common.IntRangeSerializer
 import org.utbot.common.withRemovedFinalModifier
 import org.utbot.instrumentation.ConcreteExecutor
 import org.utbot.instrumentation.Settings
@@ -7,22 +15,18 @@ import org.utbot.instrumentation.instrumentation.ArgumentList
 import org.utbot.instrumentation.instrumentation.Instrumentation
 import org.utbot.instrumentation.instrumentation.InvokeWithStaticsInstrumentation
 import org.utbot.instrumentation.instrumentation.instrumenter.Instrumenter
-import org.utbot.instrumentation.util.CastProbesArrayException
-import org.utbot.instrumentation.util.ChildProcessError
-import org.utbot.instrumentation.util.InstrumentationException
-import org.utbot.instrumentation.util.NoProbesArrayException
-import org.utbot.instrumentation.util.Protocol
-import org.utbot.instrumentation.util.UnexpectedCommand
+import org.utbot.instrumentation.util.*
 import java.security.ProtectionDomain
-
+@Serializable
 data class CoverageInfo(
-    val methodToInstrRange: Map<String, IntRange>,
+    val methodToInstrRange: Map<String, @Serializable(with = IntRangeSerializer::class) IntRange>,
     val visitedInstrs: List<Int>
 )
 
 /**
  * This instrumentation allows collecting coverage after several calls.
  */
+@Serializable
 object CoverageInstrumentation : Instrumentation<Result<*>> {
     private val invokeWithStatics = InvokeWithStaticsInstrumentation()
 
@@ -113,11 +117,13 @@ object CoverageInstrumentation : Instrumentation<Result<*>> {
  * This command is sent to the child process from the [ConcreteExecutor] if user wants to collect coverage for the
  * [clazz].
  */
-data class CollectCoverageCommand<T : Any>(val clazz: Class<out T>) : Protocol.InstrumentationCommand()
+@Serializable
+data class CollectCoverageCommand<T : Any>(val clazz: @Contextual Class<out T>) : Protocol.InstrumentationCommand()
 
 /**
  * This command is sent back to the [ConcreteExecutor] with the [coverageInfo].
  */
+@Serializable
 data class CoverageInfoCommand(val coverageInfo: CoverageInfo) : Protocol.InstrumentationCommand()
 
 /**
